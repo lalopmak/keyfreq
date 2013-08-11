@@ -112,10 +112,14 @@ since the last time the frequencies were saved in `keyfreq-file'.")
 (defun keyfreq-pre-command-hook ()
   "Records command execution in `keyfreq-table' hash."
 
-  (let ((command real-last-command) count)
+  (let ((command real-this-command)
+        (command-keys (key-description (this-command-keys)))
+        count)
     (when (and command (symbolp command))
-      (setq count (gethash (cons major-mode command) keyfreq-table))
-      (puthash (cons major-mode command) (if count (1+ count) 1)
+      (setq count (gethash (cons major-mode (cons command-keys command)) 
+                           keyfreq-table))
+      (puthash (cons major-mode (cons command-keys command))
+               (if count (1+ count) 1)
 	       keyfreq-table))))
 
 
