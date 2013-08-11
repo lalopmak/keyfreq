@@ -396,32 +396,42 @@ buffer is used as MAJOR-MODE-SYMBOL argument."
   ;; Check again the lock existence (just in case...)
   (not (file-exists-p keyfreq-file-lock)))
 
+(defvar numsaves 0)
 
 (defun keyfreq-table-save (table)
   "Appends all values from the specified TABLE into the
 `keyfreq-file' as a sexp of an alist. Then resets the TABLE
 if it was successfully merged."
-
+  (message (format "Saving Key Frequencies: %d" numsaves))
+  (setq numsaves (1+ numsaves))
   ;; Check that the lock file does not exist
-  (when (keyfreq-file-is-unlocked)
+  (if (keyfreq-file-is-unlocked)
     ;; Lock the file
-    (keyfreq-file-claim-lock)
+    (progn (keyfreq-file-claim-lock)
+           ;; Check that we have the lock
+           (if (eq (keyfreq-file-owner) (emacs-pid))
+               (unwind-protect
+                   (progn
+                     ;; Load values and merge them with the current keyfreq-table
+                     (keyfreq-table-load table)
 
-    ;; Check that we have the lock
-    (if (eq (keyfreq-file-owner) (emacs-pid))
-	(unwind-protect
-	    (progn
-	      ;; Load values and merge them with the current keyfreq-table
-	      (keyfreq-table-load table)
+                     ;; Write the new frequencies
+                     (with-temp-file keyfreq-file
+                       (prin1 (cdr (keyfreq-list table 'no-sort)) (current-buffer))))
 
-	      ;; Write the new frequencies
-	      (with-temp-file keyfreq-file
-		(prin1 (cdr (keyfreq-list table 'no-sort)) (current-buffer))))
+                 ;; Release the lock and reset the hash table.
+                 (keyfreq-file-release-lock)
+                 (clrhash table))
+             (setq keyfreq-autosave--timer (keyfreq-delayed-save))))
+    (setq keyfreq-autosave--timer (keyfreq-delayed-save))))
 
-	  ;; Release the lock and reset the hash table.
-	  (keyfreq-file-release-lock)
-	  (clrhash table))
-      )))
+(defun keyfreq-delayed-save (&optional time repeat-delay)
+  "Saves in time seconds, repeats with repeat-delay.
+time t means we start at next repeat-delay.  time nil means random number between 0 and keyfreq-autosave-timeout.
+If repeat-delay nil, keyfreq-autosave-timeout."
+  (run-at-time (or time (random keyfreq-autosave-timeout))
+               (or repeat-delay keyfreq-autosave-timeout)
+               'keyfreq-autosave--do))
 
 
 (defun keyfreq-table-load (table)
@@ -460,9 +470,7 @@ and when emacs is killed."
 
   (if keyfreq-autosave-mode
       (progn
-	(setq keyfreq-autosave--timer
-	      (run-at-time t keyfreq-autosave-timeout
-			   'keyfreq-autosave--do))
+	(setq keyfreq-autosave--timer (keyfreq-delayed-save t))
 	(add-hook 'kill-emacs-hook 'keyfreq-autosave--do))
     (remove-hook 'kill-emacs-hook 'keyfreq-autosave--do)))
 
