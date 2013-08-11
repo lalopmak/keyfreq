@@ -400,7 +400,6 @@ buffer is used as MAJOR-MODE-SYMBOL argument."
   "Appends all values from the specified TABLE into the
 `keyfreq-file' as a sexp of an alist. Then resets the TABLE
 if it was successfully merged."
-  (setq numsaves (1+ numsaves))
   ;; Check that the lock file does not exist
   (if (keyfreq-file-is-unlocked)
     ;; Lock the file
