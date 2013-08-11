@@ -396,13 +396,10 @@ buffer is used as MAJOR-MODE-SYMBOL argument."
   ;; Check again the lock existence (just in case...)
   (not (file-exists-p keyfreq-file-lock)))
 
-(defvar numsaves 0)
-
 (defun keyfreq-table-save (table)
   "Appends all values from the specified TABLE into the
 `keyfreq-file' as a sexp of an alist. Then resets the TABLE
 if it was successfully merged."
-  (message (format "Saving Key Frequencies: %d" numsaves))
   (setq numsaves (1+ numsaves))
   ;; Check that the lock file does not exist
   (if (keyfreq-file-is-unlocked)
@@ -422,8 +419,8 @@ if it was successfully merged."
                  ;; Release the lock and reset the hash table.
                  (keyfreq-file-release-lock)
                  (clrhash table))
-             (setq keyfreq-autosave--timer (keyfreq-delayed-save))))
-    (setq keyfreq-autosave--timer (keyfreq-delayed-save))))
+             (keyfreq-remake-autosave-timer)))
+    (keyfreq-remake-autosave-timer)))
 
 (defun keyfreq-delayed-save (&optional time repeat-delay)
   "Saves in time seconds, repeats with repeat-delay.
@@ -490,6 +487,12 @@ value will take effect only after (re)enabling
 (defun keyfreq-autosave--do ()
   "Function executed periodically to save the `keyfreq-table' in `keyfreq-file'."
   (keyfreq-table-save keyfreq-table))
+
+(defun keyfreq-remake-autosave-timer ()
+  "Remakes autosave timer a random time between 0 and keyfreq-autosave-timeout."
+  (when keyfreq-autosave--timer
+    (cancel-timer keyfreq-autosave--timer))
+  (setq keyfreq-autosave--timer (keyfreq-delayed-save)))
 
 
 (provide 'keyfreq)
