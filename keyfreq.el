@@ -108,19 +108,27 @@ by default."
   "Hash table storing number of times each command was called in each major mode
 since the last time the frequencies were saved in `keyfreq-file'.")
 
-
 (defun keyfreq-pre-command-hook ()
   "Records command execution in `keyfreq-table' hash."
 
-  (let ((command real-this-command)
-        (command-keys (key-description (this-command-keys)))
-        count)
+  (let ((command real-last-command) count)
     (when (and command (symbolp command))
-      (setq count (gethash (cons major-mode (cons command-keys command)) 
-                           keyfreq-table))
-      (puthash (cons major-mode (cons command-keys command))
-               (if count (1+ count) 1)
+      (setq count (gethash (cons major-mode command) keyfreq-table))
+      (puthash (cons major-mode command) (if count (1+ count) 1)
 	       keyfreq-table))))
+
+;; (defun keyfreq-pre-command-hook ()
+;;   "Records command execution in `keyfreq-table' hash."
+
+;;   (let ((command real-this-command)
+;;         (command-keys (key-description (this-command-keys)))
+;;         count)
+;;     (when (and command (symbolp command))
+;;       (setq count (gethash (cons major-mode (cons command-keys command)) 
+;;                            keyfreq-table))
+;;       (puthash (cons major-mode (cons command-keys command))
+;;                (if count (1+ count) 1)
+;; 	       keyfreq-table))))
 
 
 (defun keyfreq-groups-major-modes (table)
@@ -211,7 +219,36 @@ called, percentage usage and the command."
       (t (lambda (e) (funcall func (cdr e) (/ (* 1e2 (cdr e)) sum) (car e)))))
      (cdr list) "")))
 
+(defun string-padder-back (l)
+  "Returns a function that takes a string and pads it from the back to length"
+  (let ((len 13))
+  (lambda (s) (if (< (length s) len)
+                  (concat s (make-string (- len (length s)) ?\s))
+                s))))
 
+(defvar keyfreq-show-func 
+  (lambda (num percent command)
+    (format "%7d  %6.2f%% %s %s\n" 
+            num 
+            percent 
+            (let* ((keybindings (where-is-internal command))
+                   (padlength 11)
+                   (padder  (lambda (s) (let ((spaces (lambda (len) (make-string len ?\s))))
+                                          (if (<= (length s) padlength)
+                                              (let* ((lengthDifference (- padlength (length s)))
+                                                     (leftPadLength (/ lengthDifference 2))
+                                                     (rightPadLength (- lengthDifference leftPadLength)))
+                                                (concat (funcall spaces leftPadLength) 
+                                                        s 
+                                                        (funcall spaces rightPadLength)))
+                                            (funcall spaces padlength))))))
+              (cond ((equal command 'self-insert-command) (funcall padder "various"))
+                    ((equal command 'undefined) (funcall padder "unknown"))
+                    (keybindings (funcall padder (key-description (car keybindings))))
+                    (t (funcall padder ""))))
+            ;; (mapcar 'key-description (where-is-internal command) )
+            command )))
+            
 (defun keyfreq-show (&optional major-mode-symbol)
   "Shows command usage statistics in `keyfreq-buffer' using
 `keyfreq-string' function.
@@ -233,7 +270,7 @@ buffer is used as MAJOR-MODE-SYMBOL argument."
 		  (cond
 		   (major-mode-symbol (keyfreq-filter-major-mode table major-mode-symbol))
 		   (t (keyfreq-groups-major-modes table)))))
-	   (formatted-list (keyfreq-format-list list t)))
+	   (formatted-list (keyfreq-format-list list (or keyfreq-show-func t))))
 
       ;; Display the table
       (display-message-or-buffer (concat (if major-mode-symbol
