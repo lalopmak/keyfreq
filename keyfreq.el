@@ -442,7 +442,7 @@ buffer is used as MAJOR-MODE-SYMBOL argument."
 `keyfreq-file' as a sexp of an alist. Then resets the TABLE
 if it was successfully merged."
   ;; Check that the lock file does not exist
-  (when (< 0 (hash-table-count keyfreq-table))
+  (when (< 0 (hash-table-count table))
     (if (keyfreq-file-is-unlocked)
         ;; Lock the file
         (progn (keyfreq-file-claim-lock)
