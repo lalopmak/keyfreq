@@ -442,25 +442,26 @@ buffer is used as MAJOR-MODE-SYMBOL argument."
 `keyfreq-file' as a sexp of an alist. Then resets the TABLE
 if it was successfully merged."
   ;; Check that the lock file does not exist
-  (if (keyfreq-file-is-unlocked)
-    ;; Lock the file
-    (progn (keyfreq-file-claim-lock)
-           ;; Check that we have the lock
-           (if (eq (keyfreq-file-owner) (emacs-pid))
-               (unwind-protect
-                   (progn
-                     ;; Load values and merge them with the current keyfreq-table
-                     (keyfreq-table-load table)
+  (when (< 0 (hash-table-count keyfreq-table))
+    (if (keyfreq-file-is-unlocked)
+        ;; Lock the file
+        (progn (keyfreq-file-claim-lock)
+               ;; Check that we have the lock
+               (if (eq (keyfreq-file-owner) (emacs-pid))
+                   (unwind-protect
+                       (progn
+                         ;; Load values and merge them with the current keyfreq-table
+                         (keyfreq-table-load table)
 
-                     ;; Write the new frequencies
-                     (with-temp-file keyfreq-file
-                       (prin1 (cdr (keyfreq-list table 'no-sort)) (current-buffer))))
+                         ;; Write the new frequencies
+                         (with-temp-file keyfreq-file
+                           (prin1 (cdr (keyfreq-list table 'no-sort)) (current-buffer))))
 
-                 ;; Release the lock and reset the hash table.
-                 (keyfreq-file-release-lock)
-                 (clrhash table))
-             (keyfreq-remake-autosave-timer)))
-    (keyfreq-remake-autosave-timer)))
+                     ;; Release the lock and reset the hash table.
+                     (keyfreq-file-release-lock)
+                     (clrhash table))
+                 (keyfreq-remake-autosave-timer)))
+      (keyfreq-remake-autosave-timer))))
 
 (defun keyfreq-delayed-save (&optional time repeat-delay)
   "Saves in time seconds, repeats with repeat-delay.
