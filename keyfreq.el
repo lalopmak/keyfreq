@@ -465,11 +465,14 @@ if it was successfully merged."
 
 (defun keyfreq-delayed-save (&optional time repeat-delay)
   "Saves in time seconds, repeats with repeat-delay.
-time t means we start at next repeat-delay.  time nil means random number between 0 and keyfreq-autosave-timeout.
-If repeat-delay nil, keyfreq-autosave-timeout."
-  (run-at-time (or time (random keyfreq-autosave-timeout))
-               (or repeat-delay keyfreq-autosave-timeout)
-               'keyfreq-autosave--do))
+
+If repeat-delay nil, keyfreq-autosave-timeout.
+
+time t means we start at next repeat-delay.  time nil means random number between 0 and repeat-delay."
+  (let ((delay (or repeat-delay keyfreq-autosave-timeout)))
+    (run-at-time (or time (random delay))
+                 delay
+                 'keyfreq-autosave--do)))
 
 
 (defun keyfreq-table-load (table)
