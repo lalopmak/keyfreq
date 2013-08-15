@@ -110,7 +110,7 @@ If keyfreq-custom-show-func-unmodify-keys is true, then C- and M- do not add any
                                                         (funcall spaces rightPadLength)))
                                             (funcall spaces padlength))))))
               (cond ((equal command 'self-insert-command) (funcall padder "various"))
-                    ((equal command 'undefined) (funcall padder "unknown"))
+                    ((equal command 'undefined) (funcall padder "undefined"))
                     (keybindings (funcall padder (keyfreq-custom-key-description-length-leq keyfreq-custom-show-func-max-command-length
                                                                                             keybindings)))
                     (t (funcall padder ""))))
