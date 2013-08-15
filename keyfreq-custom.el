@@ -111,9 +111,11 @@ If keyfreq-custom-show-modifiers is true, then C- and M- are replaced with \"\".
 If keyfreq-custom-show-modifiers is nil, then C- and M- do not add anything to string's length."
   (not (equal "" (keyfreq-custom-key-description-length-leq max-length keybindings))))
 
-(defun make-whitespace (len)
-  "Makes a string of all spaces \" \", length len"
-  (make-string len ?\s))
+(defun make-whitespace (&optional len)
+  "Makes a string of all spaces \" \", length len.  
+
+If len nil, defaults to 1."
+  (make-string (or len 1) ?\s))
 
 (defvar keyfreq-custom-show-func 
   (lambda (num percent command)
