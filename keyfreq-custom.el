@@ -14,42 +14,46 @@
 ;; GNU General Public License for more details.
 
 ;;;;;;;
-;;Variables related to custom-keyfreq-show-func
+;;General variables
 ;;;;;;;
 
-(defvar keyfreq-use-custom-keyfreq-show-func t
-  "Whether or not we should use a custom keyfreq show func")
-
-(defvar keyfreq-custom-show-func-max-command-length 11
-  "The max command length to display in our custom-keyfreq-show-func")
-
-(defvar keyfreq-custom-show-func-unmodify-keys t
+(defvar keyfreq-custom-show-modifiers t
   "Whether or not to convert modified keys, e.g. C-x, M-y, to unmodified ones, e.g. x, y.
 
 Useful for making heat maps, since most heat-map makers don't recognize C- or M-.")
 
-(defvar keyfreq-custom-show-func-show-spaces nil
+(defvar keyfreq-custom-show-spaces t
   "Whether or not to show spaces in the display.
 
 Useful to set to nil when making heat maps.")
 
 ;;;;;;;
-;;Variables related to custom-keyfreq-list 
+;;Variables related to keyfreq-custom-show-func
 ;;;;;;;
 
-(defvar keyfreq-use-custom-keyfreq-list t
+(defvar keyfreq-custom-use-show-func t
+  "Whether or not we should use a custom keyfreq show func")
+
+(defvar keyfreq-custom-show-func-max-command-length 11
+  "The max command length to display in our keyfreq-custom-show-func")
+
+;;;;;;;
+;;Variables related to keyfreq-custom-list 
+;;;;;;;
+
+(defvar keyfreq-custom-use-keyfreq-custom-list t
   "Whether or not we should use a custom keyfreq list")
 
-(defvar keyfreq-custom-keyfreq-list-max-command-length 11
-  "The max command length to allow in our custom-keyfreq-list")
+(defvar keyfreq-custom-list-max-command-length 11
+  "The max command length to allow in our keyfreq-custom-list")
 
-(defvar keyfreq-custom-keyfreq-list-show-inserts nil
+(defvar keyfreq-custom-list-show-inserts nil
   "Whether or not our custom keyfreq list should show self-insert-commands")
 
-(defvar keyfreq-custom-keyfreq-list-show-backspace nil
+(defvar keyfreq-custom-list-show-backspace nil
   "Whether or not our custom keyfreq list should show delete-backward-char")
 
-(defvar custom-dontcheck-command
+(defvar keyfreq-custom-dontcheck-command
   '(undefined
     scroll-bar-toolkit-scroll
     mouse-set-point
@@ -59,7 +63,7 @@ Useful to set to nil when making heat maps.")
     mouse-set-region
     mouse-drag-mode-line
     )
-"Commands for custom-keyfreq-list not to count")
+"Commands for keyfreq-custom-list not to count")
 
 ;;;;;;;
 ;;The actual functions
@@ -80,15 +84,15 @@ Useful to set to nil when making heat maps.")
 
 If max-length nil, then any length is acceptable.
 
-If keyfreq-custom-show-func-unmodify-keys is true, then C- and M- are replaced with \"\"."
+If keyfreq-custom-show-modifiers is true, then C- and M- are replaced with \"\"."
   (let* ((key-descriptions (mapcar 'key-description keybindings))
          (converted-key-descriptions (mapcar (lambda (s)
-                                               (if keyfreq-custom-show-func-unmodify-keys
-                                                   (keyfreq-custom-replace-modifiers-in-string s)
-                                                 s))
+                                               (if keyfreq-custom-show-modifiers
+                                                   s
+                                                 (keyfreq-custom-replace-modifiers-in-string s)))
                                              key-descriptions))
          (unspaced-key-descriptions (mapcar (lambda (s)
-                                               (if keyfreq-custom-show-func-show-spaces
+                                               (if keyfreq-custom-show-spaces
                                                    s
                                                  (keyfreq-custom-replace-spaces-in-string s)))
                                              converted-key-descriptions))
@@ -101,13 +105,13 @@ If keyfreq-custom-show-func-unmodify-keys is true, then C- and M- are replaced w
       (car short-key-descriptions)
       "")))
 
-(defun exists-keyfreq-custom-key-description-length-leq (max-length keybindings)
+(defun keyfreq-custom-exists-key-description-length-leq (max-length keybindings)
   "Whether or not a keybinding of length <= max-length (or, if max-length nil, any length) exists in keybindings.
 
-If keyfreq-custom-show-func-unmodify-keys is true, then C- and M- do not add anything to string's length."
+If keyfreq-custom-show-modifiers is nil, then C- and M- do not add anything to string's length."
   (not (equal "" (keyfreq-custom-key-description-length-leq max-length keybindings))))
 
-(defvar custom-keyfreq-show-func 
+(defvar keyfreq-custom-show-func 
   (lambda (num percent command)
     (format "%7d  %6.2f%% %s %s\n" 
             num 
@@ -134,19 +138,19 @@ If keyfreq-custom-show-func-unmodify-keys is true, then C- and M- do not add any
 
 
 ;;custom keyfreq-list function for converting keyfreq table to list
-(defvar custom-keyfreq-list 
+(defvar keyfreq-custom-list 
   (lambda (table &optional reverse limit)
     (let (l (sum 0))
       (maphash
        (lambda (k v) 
          (let ((keybindings (where-is-internal k)))
            (unless (or (not keybindings)
-                       (and (not keyfreq-custom-keyfreq-list-show-inserts)
+                       (and (not keyfreq-custom-list-show-inserts)
                             (equal k 'self-insert-command))
-                       (and (not keyfreq-custom-keyfreq-list-show-backspace)
+                       (and (not keyfreq-custom-list-show-backspace)
                             (equal k 'delete-backward-char))
-                       (member k custom-dontcheck-command)
-                       (not (exists-keyfreq-custom-key-description-length-leq keyfreq-custom-keyfreq-list-max-command-length
+                       (member k keyfreq-custom-dontcheck-command)
+                       (not (keyfreq-custom-exists-key-description-length-leq keyfreq-custom-list-max-command-length
                                                                               keybindings)))
              (setq l (cons (cons k v) l) sum (+ sum v)))))
        table)

@@ -256,17 +256,17 @@ buffer is used as MAJOR-MODE-SYMBOL argument."
     ;; Merge with the values in .emacs.keyfreq file
     (keyfreq-table-load table)
 
-    (let* ((keyfreq-list-func (if (and keyfreq-use-custom-keyfreq-list
-                                       custom-keyfreq-list)
-                                  custom-keyfreq-list 
+    (let* ((keyfreq-list-func (if (and keyfreq-custom-use-keyfreq-custom-list
+                                       keyfreq-custom-list)
+                                  keyfreq-custom-list 
                                 'keyfreq-list))
             (list (funcall keyfreq-list-func
                            (cond
                             (major-mode-symbol (keyfreq-filter-major-mode table major-mode-symbol))
                             (t (keyfreq-groups-major-modes table)))))
-	   (formatted-list (keyfreq-format-list list (if (and keyfreq-use-custom-keyfreq-show-func
-                                                              custom-keyfreq-show-func)
-                                                         custom-keyfreq-show-func
+	   (formatted-list (keyfreq-format-list list (if (and keyfreq-custom-use-show-func
+                                                              keyfreq-custom-show-func)
+                                                         keyfreq-custom-show-func
                                                        t))))
       ;; Display the table
       (display-message-or-buffer (concat (if major-mode-symbol
