@@ -13,8 +13,16 @@
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 
+;;;;;;;
+;;Variables related to custom-keyfreq-show-func
+;;;;;;;
+
 (defvar keyfreq-use-custom-keyfreq-show-func t
   "Whether or not we should use a custom keyfreq show func")
+
+;;;;;;;
+;;Variables related to custom-keyfreq-list 
+;;;;;;;
 
 (defvar keyfreq-use-custom-keyfreq-list t
   "Whether or not we should use a custom keyfreq list")
@@ -25,6 +33,21 @@
 (defvar keyfreq-custom-keyfreq-list-show-backspace nil
   "Whether or not our custom keyfreq list should show delete-backward-char")
 
+(defvar custom-dontcheck-command
+  '(undefined
+    scroll-bar-toolkit-scroll
+    mouse-set-point
+    evil-mouse-drag-region
+    mwheel-scroll
+    mouse-save-then-kill
+    mouse-set-region
+    mouse-drag-mode-line
+    )
+"Commands for custom-keyfreq-list not to count")
+
+;;;;;;;
+;;The actual functions
+;;;;;;;
 
 (defvar custom-keyfreq-show-func 
   (lambda (num percent command)
@@ -49,19 +72,7 @@
             ;; (mapcar 'key-description (where-is-internal command) )
             command )))
 
-(defvar custom-dontcheck-command
-  '(undefined
-    scroll-bar-toolkit-scroll
-    mouse-set-point
-    evil-mouse-drag-region
-    ;; evil-scroll-up
-    ;; evil-scroll-down
-    mwheel-scroll
-    mouse-save-then-kill
-    mouse-set-region
-    mouse-drag-mode-line
-    )
-"Commands for custom-keyfreq-list not to count")
+
 
 ;;custom keyfreq-list function for converting keyfreq table to list
 (defvar custom-keyfreq-list 
