@@ -1,6 +1,7 @@
 ;;; keyfreq.el --- track command frequencies
 ;; -*- coding: utf-8 -*-
 ;;
+;; Copyright 2013 by lalop
 ;; Copyright 2009-2010 by David Capello
 ;; Copyright 2008 by Xah Lee
 ;; Copyright 2006 by Michal Nazarewicz
@@ -19,6 +20,11 @@
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
+;;
+;; Version 1.5 - 2013-08 - lalop
+;; * Added customizations
+;; * Attempted (but probably failed) to randomize write times and
+;;   avoid locks
 ;;
 ;; Version 1.4 - 2010-09 - David Capello
 ;; * Renamed from command-frequency to keyfreq
@@ -72,7 +78,7 @@
   "Customization group for keyfreq mode.  This mode stores
 number of times each command was called and provides it as
 a statistical data."
-  :package-version '(keyfreq . "1.4")
+  :package-version '(keyfreq . "1.5")
   :group 'local
   :prefix "keyfreq")
 
