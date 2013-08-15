@@ -111,6 +111,10 @@ If keyfreq-custom-show-modifiers is true, then C- and M- are replaced with \"\".
 If keyfreq-custom-show-modifiers is nil, then C- and M- do not add anything to string's length."
   (not (equal "" (keyfreq-custom-key-description-length-leq max-length keybindings))))
 
+(defun make-spaces (len)
+  "Makes a string of all spaces \" \", length len"
+  (make-string len ?\s))
+
 (defvar keyfreq-custom-show-func 
   (lambda (num percent command)
     (format "%7d  %6.2f%% %s %s\n" 
@@ -118,15 +122,14 @@ If keyfreq-custom-show-modifiers is nil, then C- and M- do not add anything to s
             percent 
             (let* ((keybindings (where-is-internal command))
                    (padlength (max 7 keyfreq-custom-show-func-max-command-length))
-                   (padder  (lambda (s) (let ((spaces (lambda (len) (make-string len ?\s))))
-                                          (if (<= (length s) padlength)
-                                              (let* ((lengthDifference (- padlength (length s)))
-                                                     (leftPadLength (/ lengthDifference 2))
-                                                     (rightPadLength (- lengthDifference leftPadLength)))
-                                                (concat (funcall spaces leftPadLength) 
-                                                        s 
-                                                        (funcall spaces rightPadLength)))
-                                            (funcall spaces padlength))))))
+                   (padder  (lambda (s) (if (<= (length s) padlength)
+                                            (let* ((lengthDifference (- padlength (length s)))
+                                                   (leftPadLength (/ lengthDifference 2))
+                                                   (rightPadLength (- lengthDifference leftPadLength)))
+                                              (concat (make-spaces leftPadLength) 
+                                                      s 
+                                                      (make-spaces rightPadLength)))
+                                          (make-spaces padlength)))))
               (cond ((equal command 'self-insert-command) (funcall padder "various"))
                     ((equal command 'undefined) (funcall padder "undefined"))
                     (keybindings (funcall padder (keyfreq-custom-key-description-length-leq keyfreq-custom-show-func-max-command-length
