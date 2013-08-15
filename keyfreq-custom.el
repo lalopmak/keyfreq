@@ -20,12 +20,23 @@
 (defvar keyfreq-use-custom-keyfreq-show-func t
   "Whether or not we should use a custom keyfreq show func")
 
+(defvar keyfreq-custom-show-func-max-command-length 1
+  "The max command length to display in our custom-keyfreq-show-func")
+
+(defvar keyfreq-custom-show-func-unmodify-keys t
+  "Whether or not to convert modified keys, e.g. C-x, M-y, to unmodified ones, e.g. x, y.
+
+Useful for making heat maps, since most heat-map makers don't recognize C- or M-.")
+
 ;;;;;;;
 ;;Variables related to custom-keyfreq-list 
 ;;;;;;;
 
 (defvar keyfreq-use-custom-keyfreq-list t
   "Whether or not we should use a custom keyfreq list")
+
+(defvar keyfreq-custom-keyfreq-list-max-command-length 1
+  "The max command length to allow in our custom-keyfreq-list")
 
 (defvar keyfreq-custom-keyfreq-list-show-inserts nil
   "Whether or not our custom keyfreq list should show self-insert-commands")
@@ -49,15 +60,48 @@
 ;;The actual functions
 ;;;;;;;
 
+(defun keyfreq-custom-replace-modifiers-in-string (s)
+  "Replaces C- and M- in string s with \"\""
+  (replace-regexp-in-string "C-" "" (replace-regexp-in-string "M-"
+                                                              ""
+                                                              s)))
+
+(defun keyfreq-custom-key-description-length-leq (max-length keybindings)
+  "Returns a key description of keybindings <= max-length, or \"\" if none exists.
+
+If max-length nil, then any length is acceptable.
+
+If keyfreq-custom-show-func-unmodify-keys is true, then C- and M- are replaced with \"\"."
+  (let* ((key-descriptions (mapcar 'key-description keybindings))
+         (converted-key-descriptions (mapcar (lambda (s)
+                                               (if keyfreq-custom-show-func-unmodify-keys
+                                                   (keyfreq-custom-replace-modifiers-in-string s)
+                                                 s))
+                                             key-descriptions))
+         (short-key-descriptions (remove-if-not (lambda (s)
+                                                  (or (not max-length)
+                                                      (<= (length s)
+                                                          max-length)))
+                                                converted-key-descriptions)))
+    (if short-key-descriptions
+      (car short-key-descriptions)
+      "")))
+
+(defun exists-keyfreq-custom-key-description-length-leq (max-length keybindings)
+  "Whether or not a keybinding of length <= max-length (or, if max-length nil, any length) exists in keybindings.
+
+If keyfreq-custom-show-func-unmodify-keys is true, then C- and M- do not add anything to string's length."
+  (not (equal "" (keyfreq-custom-key-description-length-leq max-length keybindings))))
+
 (defvar custom-keyfreq-show-func 
   (lambda (num percent command)
     (format "%7d  %6.2f%% %s %s\n" 
             num 
             percent 
             (let* ((keybindings (where-is-internal command))
-                   (padlength 11)
+                   (padlength (max 7 keyfreq-custom-show-func-max-command-length))
                    (padder  (lambda (s) (let ((spaces (lambda (len) (make-string len ?\s))))
-                                          (if (<= (length s) padlength)
+                                          (if (<= (length s) keyfreq-custom-show-func-max-command-length)
                                               (let* ((lengthDifference (- padlength (length s)))
                                                      (leftPadLength (/ lengthDifference 2))
                                                      (rightPadLength (- lengthDifference leftPadLength)))
@@ -67,7 +111,8 @@
                                             (funcall spaces padlength))))))
               (cond ((equal command 'self-insert-command) (funcall padder "various"))
                     ((equal command 'undefined) (funcall padder "unknown"))
-                    (keybindings (funcall padder (key-description (car keybindings))))
+                    (keybindings (funcall padder (keyfreq-custom-key-description-length-leq keyfreq-custom-show-func-max-command-length
+                                                                                            keybindings)))
                     (t (funcall padder ""))))
             ;; (mapcar 'key-description (where-is-internal command) )
             command )))
@@ -86,7 +131,9 @@
                             (equal k 'self-insert-command))
                        (and (not keyfreq-custom-keyfreq-list-show-backspace)
                             (equal k 'delete-backward-char))
-                       (member k custom-dontcheck-command))
+                       (member k custom-dontcheck-command)
+                       (not (exists-keyfreq-custom-key-description-length-leq keyfreq-custom-keyfreq-list-max-command-length
+                                                                              keybindings)))
              (setq l (cons (cons k v) l) sum (+ sum v)))))
        table)
       (cons sum
