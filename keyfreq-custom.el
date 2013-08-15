@@ -18,7 +18,7 @@
 ;;;;;;;
 
 (defvar keyfreq-custom-show-modifiers t
-  "Whether or not to convert modified keys, e.g. C-x, M-y, to unmodified ones, e.g. x, y.
+  "Whether to show modifiers, e.g. C-x, M-y, or drop the C-, M-.
 
 Useful for making heat maps, since most heat-map makers don't recognize C- or M-.")
 
@@ -47,11 +47,11 @@ Useful to set to nil when making heat maps.")
 (defvar keyfreq-custom-list-max-command-length 11
   "The max command length to allow in our keyfreq-custom-list")
 
-(defvar keyfreq-custom-list-show-inserts nil
-  "Whether or not our custom keyfreq list should show self-insert-commands")
+(defvar keyfreq-custom-list-include-inserts nil
+  "Whether or not our custom keyfreq list should include self-insert-commands")
 
-(defvar keyfreq-custom-list-show-backspace nil
-  "Whether or not our custom keyfreq list should show delete-backward-char")
+(defvar keyfreq-custom-list-include-backspace nil
+  "Whether or not our custom keyfreq list should include delete-backward-char")
 
 (defvar keyfreq-custom-dontcheck-command
   '(undefined
@@ -150,9 +150,9 @@ If len nil, defaults to 1."
        (lambda (k v) 
          (let ((keybindings (where-is-internal k)))
            (unless (or (not keybindings)
-                       (and (not keyfreq-custom-list-show-inserts)
+                       (and (not keyfreq-custom-list-include-inserts)
                             (equal k 'self-insert-command))
-                       (and (not keyfreq-custom-list-show-backspace)
+                       (and (not keyfreq-custom-list-include-backspace)
                             (equal k 'delete-backward-char))
                        (member k keyfreq-custom-dontcheck-command)
                        (not (keyfreq-custom-exists-key-description-length-leq keyfreq-custom-list-max-command-length
