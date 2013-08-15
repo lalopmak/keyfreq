@@ -15,6 +15,11 @@
 ;; published by the Free Software Foundation; either version 2 of the
 ;; License, or (at your option) any later version.
 ;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
 ;; Version 1.4 - 2010-09 - David Capello
 ;; * Renamed from command-frequency to keyfreq
 ;; * Now keyfreq-table holds "deltas"
@@ -60,6 +65,8 @@
 ;; And use keyfreq-show to see how many times you used a command.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require 'keyfreq-custom)
 
 (defgroup keyfreq nil
   "Customization group for keyfreq mode.  This mode stores
@@ -226,29 +233,6 @@ called, percentage usage and the command."
                   (concat s (make-string (- len (length s)) ?\s))
                 s))))
 
-(defvar keyfreq-show-func 
-  (lambda (num percent command)
-    (format "%7d  %6.2f%% %s %s\n" 
-            num 
-            percent 
-            (let* ((keybindings (where-is-internal command))
-                   (padlength 11)
-                   (padder  (lambda (s) (let ((spaces (lambda (len) (make-string len ?\s))))
-                                          (if (<= (length s) padlength)
-                                              (let* ((lengthDifference (- padlength (length s)))
-                                                     (leftPadLength (/ lengthDifference 2))
-                                                     (rightPadLength (- lengthDifference leftPadLength)))
-                                                (concat (funcall spaces leftPadLength) 
-                                                        s 
-                                                        (funcall spaces rightPadLength)))
-                                            (funcall spaces padlength))))))
-              (cond ((equal command 'self-insert-command) (funcall padder "various"))
-                    ((equal command 'undefined) (funcall padder "unknown"))
-                    (keybindings (funcall padder (key-description (car keybindings))))
-                    (t (funcall padder ""))))
-            ;; (mapcar 'key-description (where-is-internal command) )
-            command )))
-            
 (defun keyfreq-show (&optional major-mode-symbol)
   "Shows command usage statistics in `keyfreq-buffer' using
 `keyfreq-string' function.
@@ -266,12 +250,18 @@ buffer is used as MAJOR-MODE-SYMBOL argument."
     ;; Merge with the values in .emacs.keyfreq file
     (keyfreq-table-load table)
 
-    (let* ((list (keyfreq-list
-		  (cond
-		   (major-mode-symbol (keyfreq-filter-major-mode table major-mode-symbol))
-		   (t (keyfreq-groups-major-modes table)))))
-	   (formatted-list (keyfreq-format-list list (or keyfreq-show-func t))))
-
+    (let* ((keyfreq-list-func (if (and keyfreq-use-custom-keyfreq-list
+                                       custom-keyfreq-list)
+                                  custom-keyfreq-list 
+                                'keyfreq-list))
+            (list (funcall keyfreq-list-func
+                           (cond
+                            (major-mode-symbol (keyfreq-filter-major-mode table major-mode-symbol))
+                            (t (keyfreq-groups-major-modes table)))))
+	   (formatted-list (keyfreq-format-list list (if (and keyfreq-use-custom-keyfreq-show-func
+                                                              custom-keyfreq-show-func)
+                                                         custom-keyfreq-show-func
+                                                       t))))
       ;; Display the table
       (display-message-or-buffer (concat (if major-mode-symbol
 					     (concat "For " (symbol-name major-mode))
@@ -468,7 +458,7 @@ if it was successfully merged."
 
 If repeat-delay nil, keyfreq-autosave-timeout.
 
-time t means we start at next repeat-delay.  time nil means random number between 0 and repeat-delay."
+time t means we start at next repeat-delay.  time nil means start at random time between 0 and repeat-delay."
   (let ((delay (or repeat-delay keyfreq-autosave-timeout)))
     (run-at-time (or time (random delay))
                  delay
