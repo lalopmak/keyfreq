@@ -101,7 +101,7 @@ If keyfreq-custom-show-func-unmodify-keys is true, then C- and M- do not add any
             (let* ((keybindings (where-is-internal command))
                    (padlength (max 7 keyfreq-custom-show-func-max-command-length))
                    (padder  (lambda (s) (let ((spaces (lambda (len) (make-string len ?\s))))
-                                          (if (<= (length s) keyfreq-custom-show-func-max-command-length)
+                                          (if (<= (length s) padlength)
                                               (let* ((lengthDifference (- padlength (length s)))
                                                      (leftPadLength (/ lengthDifference 2))
                                                      (rightPadLength (- lengthDifference leftPadLength)))
