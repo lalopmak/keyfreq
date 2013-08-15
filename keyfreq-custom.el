@@ -111,7 +111,7 @@ If keyfreq-custom-show-modifiers is true, then C- and M- are replaced with \"\".
 If keyfreq-custom-show-modifiers is nil, then C- and M- do not add anything to string's length."
   (not (equal "" (keyfreq-custom-key-description-length-leq max-length keybindings))))
 
-(defun make-spaces (len)
+(defun make-whitespace (len)
   "Makes a string of all spaces \" \", length len"
   (make-string len ?\s))
 
@@ -126,10 +126,10 @@ If keyfreq-custom-show-modifiers is nil, then C- and M- do not add anything to s
                                             (let* ((lengthDifference (- padlength (length s)))
                                                    (leftPadLength (/ lengthDifference 2))
                                                    (rightPadLength (- lengthDifference leftPadLength)))
-                                              (concat (make-spaces leftPadLength) 
+                                              (concat (make-whitespace leftPadLength) 
                                                       s 
-                                                      (make-spaces rightPadLength)))
-                                          (make-spaces padlength)))))
+                                                      (make-whitespace rightPadLength)))
+                                          (make-whitespace padlength)))))
               (cond ((equal command 'self-insert-command) (funcall padder "various"))
                     ((equal command 'undefined) (funcall padder "undefined"))
                     (keybindings (funcall padder (keyfreq-custom-key-description-length-leq keyfreq-custom-show-func-max-command-length
