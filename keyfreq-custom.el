@@ -63,7 +63,7 @@ Useful to set to nil when making heat maps.")
     mouse-set-region
     mouse-drag-mode-line
     )
-"Commands for keyfreq-custom-list not to count")
+"Commands for keyfreq-custom-list not to include.")
 
 ;;;;;;;
 ;;The actual functions
@@ -117,8 +117,8 @@ If keyfreq-custom-show-modifiers is nil, then C- and M- do not add anything to s
 If len nil, defaults to 1."
   (make-string (or len 1) ?\s))
 
-(defvar keyfreq-custom-show-func 
-  (lambda (num percent command)
+(defun keyfreq-custom-show-func (num percent command)
+  "Custom version of show function used in keyfreq-show; feel free to overload."
     (format "%7d  %6.2f%% %s %s\n" 
             num 
             percent 
@@ -138,13 +138,13 @@ If len nil, defaults to 1."
                                                                                             keybindings)))
                     (t (funcall padder ""))))
             ;; (mapcar 'key-description (where-is-internal command) )
-            command )))
+            command ))
 
 
 
 ;;custom keyfreq-list function for converting keyfreq table to list
-(defvar keyfreq-custom-list 
-  (lambda (table &optional reverse limit)
+(defun keyfreq-custom-list (table &optional reverse limit)
+  "Custom version of keyfreq-list; feel free to change/overload"
     (let (l (sum 0))
       (maphash
        (lambda (k v) 
@@ -163,6 +163,6 @@ If len nil, defaults to 1."
             (cond
              ((equal reverse 'no-sort) l)
              (reverse (sort l (lambda (a b) (< (cdr a) (cdr b)))))
-             (t       (sort l (lambda (a b) (> (cdr a) (cdr b))))))))))
+             (t       (sort l (lambda (a b) (> (cdr a) (cdr b)))))))))
 
 (provide 'keyfreq-custom)
