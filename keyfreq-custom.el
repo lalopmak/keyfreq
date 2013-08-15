@@ -1,7 +1,7 @@
 ;; keyfreq-custom
 ;; Customizations to keyfreq.el
 
-;; Copyright 2013
+;; Copyright 2013 - lalop
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -20,13 +20,18 @@
 (defvar keyfreq-use-custom-keyfreq-show-func t
   "Whether or not we should use a custom keyfreq show func")
 
-(defvar keyfreq-custom-show-func-max-command-length 1
+(defvar keyfreq-custom-show-func-max-command-length 11
   "The max command length to display in our custom-keyfreq-show-func")
 
 (defvar keyfreq-custom-show-func-unmodify-keys t
   "Whether or not to convert modified keys, e.g. C-x, M-y, to unmodified ones, e.g. x, y.
 
 Useful for making heat maps, since most heat-map makers don't recognize C- or M-.")
+
+(defvar keyfreq-custom-show-func-show-spaces nil
+  "Whether or not to show spaces in the display.
+
+Useful to set to nil when making heat maps.")
 
 ;;;;;;;
 ;;Variables related to custom-keyfreq-list 
@@ -35,7 +40,7 @@ Useful for making heat maps, since most heat-map makers don't recognize C- or M-
 (defvar keyfreq-use-custom-keyfreq-list t
   "Whether or not we should use a custom keyfreq list")
 
-(defvar keyfreq-custom-keyfreq-list-max-command-length 1
+(defvar keyfreq-custom-keyfreq-list-max-command-length 11
   "The max command length to allow in our custom-keyfreq-list")
 
 (defvar keyfreq-custom-keyfreq-list-show-inserts nil
@@ -66,6 +71,10 @@ Useful for making heat maps, since most heat-map makers don't recognize C- or M-
                                                               ""
                                                               s)))
 
+(defun keyfreq-custom-replace-spaces-in-string (s)
+  "Replaces \" \" in string s with \"\""
+  (replace-regexp-in-string " " "" s))
+
 (defun keyfreq-custom-key-description-length-leq (max-length keybindings)
   "Returns a key description of keybindings <= max-length, or \"\" if none exists.
 
@@ -78,11 +87,16 @@ If keyfreq-custom-show-func-unmodify-keys is true, then C- and M- are replaced w
                                                    (keyfreq-custom-replace-modifiers-in-string s)
                                                  s))
                                              key-descriptions))
+         (unspaced-key-descriptions (mapcar (lambda (s)
+                                               (if keyfreq-custom-show-func-show-spaces
+                                                   s
+                                                 (keyfreq-custom-replace-spaces-in-string s)))
+                                             converted-key-descriptions))
          (short-key-descriptions (remove-if-not (lambda (s)
                                                   (or (not max-length)
                                                       (<= (length s)
                                                           max-length)))
-                                                converted-key-descriptions)))
+                                                unspaced-key-descriptions)))
     (if short-key-descriptions
       (car short-key-descriptions)
       "")))
