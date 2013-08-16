@@ -44,25 +44,21 @@ Useful to set to nil when making heat maps.")
   "The max command length to display in our keyfreq-custom-show-func")
 
 ;;;;;;;
-;;Variables related to keyfreq-custom-list 
+;;Variables related to keyfreq-custom-filter 
 ;;;;;;;
-(defvar keyfreq-custom-filter-list t
+(defvar keyfreq-custom-filter-on t
   "Whether or not to filter keyfreq-list by keyfreq-custom-accept-command")
 
-(defvar keyfreq-custom-use-keyfreq-custom-list t
+(defvar keyfreq-custom-filter-max-command-length 11
+  "The max command length to allow in our keyfreq-custom-filter")
 
-  "Whether or not we should use a custom keyfreq list")
-
-(defvar keyfreq-custom-list-max-command-length 11
-  "The max command length to allow in our keyfreq-custom-list")
-
-(defvar keyfreq-custom-list-include-inserts t
+(defvar keyfreq-custom-filter-include-inserts t
   "Whether or not our custom keyfreq list should include self-insert-commands")
 
-(defvar keyfreq-custom-list-include-backspace t
+(defvar keyfreq-custom-filter-include-backspace t
   "Whether or not our custom keyfreq list should include delete-backward-char")
 
-(defvar keyfreq-custom-list-include-representations nil
+(defvar keyfreq-custom-filter-include-representations nil
   "Whether or not our custom keyfreq list should include items of the form <backspace>, DEL")
 
 (defvar keyfreq-custom-dontcheck-command
@@ -75,7 +71,7 @@ Useful to set to nil when making heat maps.")
     mouse-set-region
     mouse-drag-mode-line
     )
-"Commands for keyfreq-custom-list not to include.")
+"Commands for keyfreq-custom-filter not to include.")
 
 ;;;;;;;
 ;;The actual functions
@@ -108,7 +104,7 @@ If keyfreq-custom-show-modifiers is true, then C- and M- are replaced with \"\".
                                                  (keyfreq-custom-replace-spaces-in-string s)))
                                              converted-key-descriptions))
          (unrepresented-key-descriptions (remove-if (lambda (s)
-                                                      (and (not keyfreq-custom-list-include-representations)
+                                                      (and (not keyfreq-custom-filter-include-representations)
                                                            (or (and (string-match "<" s)
                                                                     (string-match ">" s))
                                                                (string-match "DEL" s))))
@@ -165,29 +161,14 @@ If len nil, defaults to 1."
   (let ((keybindings (where-is-internal command)))
     (and (or (not keyfreq-custom-require-keybindings)
              keybindings)
-         (or keyfreq-custom-list-include-inserts
+         (or keyfreq-custom-filter-include-inserts
              (not-equal command 'self-insert-command))
-         (or keyfreq-custom-list-include-backspace
+         (or keyfreq-custom-filter-include-backspace
              (not-equal command 'delete-backward-char))
          (not (member command keyfreq-custom-dontcheck-command))
-         (keyfreq-custom-exists-key-description-length-leq keyfreq-custom-list-max-command-length
+         (keyfreq-custom-exists-key-description-length-leq keyfreq-custom-filter-max-command-length
                                                            keybindings)))) 
 
 
-
-;;custom keyfreq-list function for converting keyfreq table to list
-(defun keyfreq-custom-list (table &optional reverse limit)
-  "Custom version of keyfreq-list; feel free to change/overload"
-    (let (l (sum 0))
-      (maphash
-       (lambda (k v) 
-         (when (keyfreq-custom-accept-command k)
-           (setq l (cons (cons k v) l) sum (+ sum v))))
-       table)
-      (cons sum
-            (cond
-             ((equal reverse 'no-sort) l)
-             (reverse (sort l (lambda (a b) (< (cdr a) (cdr b)))))
-             (t       (sort l (lambda (a b) (> (cdr a) (cdr b)))))))))
 
 (provide 'keyfreq-custom)

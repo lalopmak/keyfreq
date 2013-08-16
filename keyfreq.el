@@ -180,9 +180,9 @@ contained in the TABLE)."
 (defmacro keyfreq-filtered-lambda (args &rest body)
   "Acts almost like lambda.  Use as (lambda (command ...) body)
 
-If keyfreq-custom-filter-list, then requires (keyfreq-custom-accept-command command) in order to run body."
+If keyfreq-custom-filter-on, then requires (keyfreq-custom-accept-command command) in order to run body."
   `(lambda ,args
-     (when (or (not keyfreq-custom-filter-list)
+     (when (or (not keyfreq-custom-filter-on)
                (keyfreq-custom-accept-command ,(first args)))
        ,@body)))
 
@@ -283,6 +283,7 @@ buffer is used as MAJOR-MODE-SYMBOL argument."
 					 formatted-list)
 				 keyfreq-buffer)
       )))
+
 (defun keyfreq-generate-heat-map-input (&optional keyfreq-heat-map-file major-mode-symbol)
   "Writes to keyfreq-heat-map-file (if nil, \".emacs.keyfreq.heatmap\") the
 individual keys pressed.  
@@ -299,16 +300,30 @@ this function defaults them to \"\"."
         (keyfreq-custom-M-replacement (if keyfreq-custom-M-replacement
                                           keyfreq-custom-M-replacement
                                         ""))
+        (keyfreq-custom-filter-on t)
         (keyfreq-custom-show-spaces nil)
-        (keyfreq-custom-list-include-inserts nil)
-        (keyfreq-custom-list-include-backspace nil)
-        (keyfreq-custom-list-include-representations nil)
+        (keyfreq-custom-filter-include-inserts nil)
+        (keyfreq-custom-filter-include-backspace nil)
+        (keyfreq-custom-filter-include-representations nil)
+        (keyfreq-custom-filter-max-command-length 11)
         (output-file (or keyfreq-heat-map-file "~/.emacs.keyfreq.heatmap"))
+        (output "")
         (table (copy-hash-table keyfreq-table)))
 
     ;; Merge with the values in .emacs.keyfreq file
     (keyfreq-table-load table)
- ))                            
+     
+    (maphash (keyfreq-filtered-lambda (command num)
+                                      (loop for numInsertions from 1 to num
+                                            do (setq output 
+                                                     (concat output
+                                                             (keyfreq-custom-key-description-length-leq keyfreq-custom-filter-max-command-length
+                                                                                                        (where-is-internal command))))))
+             (keyfreq-groups-major-modes table))
+    (with-temp-file output-file
+      
+      (insert output))
+))                            
 
 (defun keyfreq-html (filename &optional confirm)
   "Saves an HTML file with all the statistics of each mode."
@@ -483,7 +498,7 @@ if it was successfully merged."
 
                          ;; Write the new frequencies
                          (with-temp-file keyfreq-file
-                           (let ((keyfreq-custom-filter-list nil))  ;;merging the whole table
+                           (let ((keyfreq-custom-filter-on nil))  ;;merging the whole table
                              (prin1 (cdr (keyfreq-list table 'no-sort)) (current-buffer)))))
 
                      ;; Release the lock and reset the hash table.
