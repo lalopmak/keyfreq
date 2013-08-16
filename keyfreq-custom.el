@@ -17,15 +17,21 @@
 ;;General variables
 ;;;;;;;
 
-(defvar keyfreq-custom-show-modifiers t
-  "Whether to show modifiers, e.g. C-x, M-y, or drop the C-, M-.
+(defvar keyfreq-custom-C-replacement nil
+  "How to display C- in strings.
+nil means the default setting of the function (usually \"C-\" or \"\")")
 
-Useful for making heat maps, since most heat-map makers don't recognize C- or M-.")
+(defvar keyfreq-custom-M-replacement nil
+  "How to display M- in strings.
+nil means the default setting of the function (usually \"C-\" or \"\")")
 
 (defvar keyfreq-custom-show-spaces t
   "Whether or not to show spaces in the display.
 
 Useful to set to nil when making heat maps.")
+
+(defvar keyfreq-custom-require-keybindings t
+  "If true, only include commands that have keybindings.")
 
 ;;;;;;;
 ;;Variables related to keyfreq-custom-show-func
@@ -40,18 +46,24 @@ Useful to set to nil when making heat maps.")
 ;;;;;;;
 ;;Variables related to keyfreq-custom-list 
 ;;;;;;;
+(defvar keyfreq-custom-filter-list t
+  "Whether or not to filter keyfreq-list by keyfreq-custom-accept-command")
 
 (defvar keyfreq-custom-use-keyfreq-custom-list t
+
   "Whether or not we should use a custom keyfreq list")
 
 (defvar keyfreq-custom-list-max-command-length 11
   "The max command length to allow in our keyfreq-custom-list")
 
-(defvar keyfreq-custom-list-include-inserts nil
+(defvar keyfreq-custom-list-include-inserts t
   "Whether or not our custom keyfreq list should include self-insert-commands")
 
-(defvar keyfreq-custom-list-include-backspace nil
+(defvar keyfreq-custom-list-include-backspace t
   "Whether or not our custom keyfreq list should include delete-backward-char")
+
+(defvar keyfreq-custom-list-include-representations nil
+  "Whether or not our custom keyfreq list should include items of the form <backspace>, DEL")
 
 (defvar keyfreq-custom-dontcheck-command
   '(undefined
@@ -69,11 +81,13 @@ Useful to set to nil when making heat maps.")
 ;;The actual functions
 ;;;;;;;
 
-(defun keyfreq-custom-replace-modifiers-in-string (s)
+(defun keyfreq-custom-convert-modifiers-in-string (s)
   "Replaces C- and M- in string s with \"\""
-  (replace-regexp-in-string "C-" "" (replace-regexp-in-string "M-"
-                                                              ""
-                                                              s)))
+  (replace-regexp-in-string "C-" 
+                            (or keyfreq-custom-C-replacement "C-") 
+                            (replace-regexp-in-string "M-"
+                                                      (or keyfreq-custom-M-replacement "M-")
+                                                      s)))
 
 (defun keyfreq-custom-replace-spaces-in-string (s)
   "Replaces \" \" in string s with \"\""
@@ -86,21 +100,24 @@ If max-length nil, then any length is acceptable.
 
 If keyfreq-custom-show-modifiers is true, then C- and M- are replaced with \"\"."
   (let* ((key-descriptions (mapcar 'key-description keybindings))
-         (converted-key-descriptions (mapcar (lambda (s)
-                                               (if keyfreq-custom-show-modifiers
-                                                   s
-                                                 (keyfreq-custom-replace-modifiers-in-string s)))
+         (converted-key-descriptions (mapcar 'keyfreq-custom-convert-modifiers-in-string
                                              key-descriptions))
          (unspaced-key-descriptions (mapcar (lambda (s)
                                                (if keyfreq-custom-show-spaces
                                                    s
                                                  (keyfreq-custom-replace-spaces-in-string s)))
                                              converted-key-descriptions))
+         (unrepresented-key-descriptions (remove-if (lambda (s)
+                                                      (and (not keyfreq-custom-list-include-representations)
+                                                           (or (and (string-match "<" s)
+                                                                    (string-match ">" s))
+                                                               (string-match "DEL" s))))
+                                                    unspaced-key-descriptions)) 
          (short-key-descriptions (remove-if-not (lambda (s)
                                                   (or (not max-length)
                                                       (<= (length s)
                                                           max-length)))
-                                                unspaced-key-descriptions)))
+                                                unrepresented-key-descriptions)))
     (if short-key-descriptions
       (car short-key-descriptions)
       "")))
@@ -140,6 +157,22 @@ If len nil, defaults to 1."
             ;; (mapcar 'key-description (where-is-internal command) )
             command ))
 
+(defun not-equal (o1 o2)
+  (not (equal o1 o2)))
+
+(defun keyfreq-custom-accept-command (command)
+  "Lets the command through in accordance to keyfreq-custom constants"
+  (let ((keybindings (where-is-internal command)))
+    (and (or (not keyfreq-custom-require-keybindings)
+             keybindings)
+         (or keyfreq-custom-list-include-inserts
+             (not-equal command 'self-insert-command))
+         (or keyfreq-custom-list-include-backspace
+             (not-equal command 'delete-backward-char))
+         (not (member command keyfreq-custom-dontcheck-command))
+         (keyfreq-custom-exists-key-description-length-leq keyfreq-custom-list-max-command-length
+                                                           keybindings)))) 
+
 
 
 ;;custom keyfreq-list function for converting keyfreq table to list
@@ -148,16 +181,8 @@ If len nil, defaults to 1."
     (let (l (sum 0))
       (maphash
        (lambda (k v) 
-         (let ((keybindings (where-is-internal k)))
-           (unless (or (not keybindings)
-                       (and (not keyfreq-custom-list-include-inserts)
-                            (equal k 'self-insert-command))
-                       (and (not keyfreq-custom-list-include-backspace)
-                            (equal k 'delete-backward-char))
-                       (member k keyfreq-custom-dontcheck-command)
-                       (not (keyfreq-custom-exists-key-description-length-leq keyfreq-custom-list-max-command-length
-                                                                              keybindings)))
-             (setq l (cons (cons k v) l) sum (+ sum v)))))
+         (when (keyfreq-custom-accept-command k)
+           (setq l (cons (cons k v) l) sum (+ sum v))))
        table)
       (cons sum
             (cond
