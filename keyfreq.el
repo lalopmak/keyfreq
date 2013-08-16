@@ -313,17 +313,18 @@ this function defaults them to \"\"."
     ;; Merge with the values in .emacs.keyfreq file
     (keyfreq-table-load table)
      
-    (maphash (keyfreq-filtered-lambda (command num)
-                                      (loop for numInsertions from 1 to num
-                                            do (setq output 
-                                                     (concat output
-                                                             (keyfreq-custom-key-description-length-leq keyfreq-custom-filter-max-command-length
-                                                                                                        (where-is-internal command))))))
-             (keyfreq-groups-major-modes table))
+    (maphash (keyfreq-filtered-lambda
+              (command num)
+              (loop for numInsertions from 1 to num
+                    do (setq output 
+                             (concat output
+                                     (keyfreq-custom-key-description-length-leq keyfreq-custom-filter-max-command-length
+                                                                                (where-is-internal command))))))
+             (cond
+              (major-mode-symbol (keyfreq-filter-major-mode table major-mode-symbol))
+              (t (keyfreq-groups-major-modes table))))
     (with-temp-file output-file
-      
-      (insert output))
-))                            
+      (insert output))))                            
 
 (defun keyfreq-html (filename &optional confirm)
   "Saves an HTML file with all the statistics of each mode."
