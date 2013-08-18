@@ -52,13 +52,13 @@ Useful to set to nil when making heat maps.")
 (defvar keyfreq-custom-filter-max-command-length 11
   "The max command length to allow in our keyfreq-custom-filter")
 
-(defvar keyfreq-custom-filter-include-inserts nil
+(defvar keyfreq-custom-filter-include-inserts t
   "Whether or not our custom keyfreq list should include self-insert-commands")
 
 (defvar keyfreq-custom-filter-include-backspace t
   "Whether or not our custom keyfreq list should include delete-backward-char")
 
-(defvar keyfreq-custom-filter-include-representations nil
+(defvar keyfreq-custom-filter-include-representations t
   "Whether or not our custom keyfreq list should include items of the form <backspace>, DEL")
 
 (defvar keyfreq-custom-dontcheck-command
@@ -86,8 +86,8 @@ Useful to set to nil when making heat maps.")
                                                       s)))
 
 (defun keyfreq-custom-replace-spaces-in-string (s)
-  "Replaces \" \" in string s with \"\""
-  (replace-regexp-in-string " " "" s))
+  "Replaces \" \" and \"SPC\" in string s with \"\""
+  (replace-regexp-in-string "SPC" "" (replace-regexp-in-string " " "" s)))
 
 (defun keyfreq-custom-key-description-length-leq (max-length keybindings)
   "Returns a key description of keybindings <= max-length, or \"\" if none exists.
@@ -107,6 +107,8 @@ If keyfreq-custom-show-modifiers is true, then C- and M- are replaced with \"\".
                                                       (and (not keyfreq-custom-filter-include-representations)
                                                            (or (and (string-match "<" s)
                                                                     (string-match ">" s))
+                                                               (string-match "TAB" s)
+                                                               (string-match "RET" s)
                                                                (string-match "DEL" s))))
                                                     unspaced-key-descriptions)) 
          (short-key-descriptions (remove-if-not (lambda (s)

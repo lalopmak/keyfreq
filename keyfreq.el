@@ -122,6 +122,17 @@ by default."
   "Hash table storing number of times each command was called in each major mode
 since the last time the frequencies were saved in `keyfreq-file'.")
 
+(defvar keyfreq-timing t
+  "Whether or not we want to time our file writes")
+
+(defmacro with-stopwatch-if-timing (message &rest body)
+  "Only calls with-stopwatch macro if it exists and we're timing.
+message and body as in with-stopwatch." 
+  `(if (and keyfreq-timing
+            (fboundp 'with-stopwatch))
+       (with-stopwatch ,message ,@body)      
+     ,@body))
+
 (defun keyfreq-pre-command-hook ()
   "Records command execution in `keyfreq-table' hash."
 
@@ -308,20 +319,24 @@ this function defaults them to \"\"."
         (keyfreq-custom-filter-include-representations nil)
         (keyfreq-custom-filter-max-command-length 11)
         (output-file (or keyfreq-heat-map-file "~/.emacs.keyfreq.heatmap"))
+        (output "")
         (table (copy-hash-table keyfreq-table)))
-
-    ;; Merge with the values in .emacs.keyfreq file
-    (keyfreq-table-load table)
-     
-    (maphash (keyfreq-filtered-lambda
-              (command num)
-              (append-to-file (keyfreq-custom-key-description-length-leq keyfreq-custom-filter-max-command-length
-                                                                                (where-is-internal command))
-                              nil
-                              output-file))
-             (cond
-              (major-mode-symbol (keyfreq-filter-major-mode table major-mode-symbol))
-              (t (keyfreq-groups-major-modes table))))))                            
+    (with-stopwatch-if-timing "heat map generation" 
+                              ;; Merge with the values in .emacs.keyfreq file
+                              (keyfreq-table-load table)
+                              
+                              (maphash (keyfreq-filtered-lambda
+                                        (command num)
+                                        (loop for numInsertions from 1 to num
+                                              do (setq output 
+                                                       (concat output
+                                                               (keyfreq-custom-key-description-length-leq keyfreq-custom-filter-max-command-length
+                                                                                                          (where-is-internal command))))))
+                                       (cond
+                                        (major-mode-symbol (keyfreq-filter-major-mode table major-mode-symbol))
+                                        (t (keyfreq-groups-major-modes table))))
+                              (with-temp-file output-file
+                                (insert output)))))                              
 
 (defun keyfreq-html (filename &optional confirm)
   "Saves an HTML file with all the statistics of each mode."
