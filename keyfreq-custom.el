@@ -52,13 +52,13 @@ Useful to set to nil when making heat maps.")
 (defvar keyfreq-custom-filter-max-command-length 11
   "The max command length to allow in our keyfreq-custom-filter")
 
-(defvar keyfreq-custom-filter-include-inserts t
+(defvar keyfreq-custom-filter-include-inserts nil
   "Whether or not our custom keyfreq list should include self-insert-commands")
 
-(defvar keyfreq-custom-filter-include-backspace t
+(defvar keyfreq-custom-filter-include-backspace nil
   "Whether or not our custom keyfreq list should include delete-backward-char")
 
-(defvar keyfreq-custom-filter-include-representations t
+(defvar keyfreq-custom-filter-include-representations nil
   "Whether or not our custom keyfreq list should include items of the form <backspace>, DEL")
 
 (defvar keyfreq-custom-dontcheck-command

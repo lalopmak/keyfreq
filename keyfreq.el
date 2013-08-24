@@ -321,22 +321,23 @@ this function defaults them to \"\"."
         (output-file (or keyfreq-heat-map-file "~/.emacs.keyfreq.heatmap"))
         (output "")
         (table (copy-hash-table keyfreq-table)))
-    (with-stopwatch-if-timing "heat map generation" 
-                              ;; Merge with the values in .emacs.keyfreq file
-                              (keyfreq-table-load table)
-                              
-                              (maphash (keyfreq-filtered-lambda
-                                        (command num)
-                                        (loop for numInsertions from 1 to num
-                                              do (setq output 
-                                                       (concat output
-                                                               (keyfreq-custom-key-description-length-leq keyfreq-custom-filter-max-command-length
-                                                                                                          (where-is-internal command))))))
-                                       (cond
-                                        (major-mode-symbol (keyfreq-filter-major-mode table major-mode-symbol))
-                                        (t (keyfreq-groups-major-modes table))))
-                              (with-temp-file output-file
-                                (insert output)))))                              
+    (with-stopwatch-if-timing 
+     "heat map generation" 
+     ;; Merge with the values in .emacs.keyfreq file
+     (keyfreq-table-load table)
+     
+     (maphash (keyfreq-filtered-lambda
+               (command num)
+               (loop for numInsertions from 1 to num
+                     do (setq output 
+                              (concat output
+                                      (keyfreq-custom-key-description-length-leq keyfreq-custom-filter-max-command-length
+                                                                                 (where-is-internal command))))))
+              (cond
+               (major-mode-symbol (keyfreq-filter-major-mode table major-mode-symbol))
+               (t (keyfreq-groups-major-modes table))))
+     (with-temp-file output-file
+       (insert output)))))                              
 
 (defun keyfreq-html (filename &optional confirm)
   "Saves an HTML file with all the statistics of each mode."
