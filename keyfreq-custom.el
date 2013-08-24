@@ -44,7 +44,7 @@ Useful to set to nil when making heat maps.")
   "The max command length to display in our keyfreq-custom-show-func")
 
 ;;;;;;;
-;;Variables related to keyfreq-custom-filter 
+;;Variables related to keyfreq-custom-filter
 ;;;;;;;
 (defvar keyfreq-custom-filter-on t
   "Whether or not to filter keyfreq-list by keyfreq-custom-accept-command")
@@ -79,8 +79,8 @@ Useful to set to nil when making heat maps.")
 
 (defun keyfreq-custom-convert-modifiers-in-string (s)
   "Replaces C- and M- in string s with \"\""
-  (replace-regexp-in-string "C-" 
-                            (or keyfreq-custom-C-replacement "C-") 
+  (replace-regexp-in-string "C-"
+                            (or keyfreq-custom-C-replacement "C-")
                             (replace-regexp-in-string "M-"
                                                       (or keyfreq-custom-M-replacement "M-")
                                                       s)))
@@ -110,7 +110,7 @@ If keyfreq-custom-show-modifiers is true, then C- and M- are replaced with \"\".
                                                                (string-match "TAB" s)
                                                                (string-match "RET" s)
                                                                (string-match "DEL" s))))
-                                                    unspaced-key-descriptions)) 
+                                                    unspaced-key-descriptions))
          (short-key-descriptions (remove-if-not (lambda (s)
                                                   (or (not max-length)
                                                       (<= (length s)
@@ -127,24 +127,24 @@ If keyfreq-custom-show-modifiers is nil, then C- and M- do not add anything to s
   (not (equal "" (keyfreq-custom-key-description-length-leq max-length keybindings))))
 
 (defun make-whitespace (&optional len)
-  "Makes a string of all spaces \" \", length len.  
+  "Makes a string of all spaces \" \", length len.
 
 If len nil, defaults to 1."
   (make-string (or len 1) ?\s))
 
 (defun keyfreq-custom-show-func (num percent command)
   "Custom version of show function used in keyfreq-show; feel free to overload."
-    (format "%7d  %6.2f%% %s %s\n" 
-            num 
-            percent 
+    (format "%7d  %6.2f%% %s %s\n"
+            num
+            percent
             (let* ((keybindings (where-is-internal command))
                    (padlength (max 7 keyfreq-custom-show-func-max-command-length))
                    (padder  (lambda (s) (if (<= (length s) padlength)
                                             (let* ((lengthDifference (- padlength (length s)))
                                                    (leftPadLength (/ lengthDifference 2))
                                                    (rightPadLength (- lengthDifference leftPadLength)))
-                                              (concat (make-whitespace leftPadLength) 
-                                                      s 
+                                              (concat (make-whitespace leftPadLength)
+                                                      s
                                                       (make-whitespace rightPadLength)))
                                           (make-whitespace padlength)))))
               (cond ((equal command 'self-insert-command) (funcall padder "various"))
@@ -169,7 +169,7 @@ If len nil, defaults to 1."
              (not-equal command 'delete-backward-char))
          (not (member command keyfreq-custom-dontcheck-command))
          (keyfreq-custom-exists-key-description-length-leq keyfreq-custom-filter-max-command-length
-                                                           keybindings)))) 
+                                                           keybindings))))
 
 
 

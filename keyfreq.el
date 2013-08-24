@@ -127,10 +127,10 @@ since the last time the frequencies were saved in `keyfreq-file'.")
 
 (defmacro with-stopwatch-if-timing (message &rest body)
   "Only calls with-stopwatch macro if it exists and we're timing.
-message and body as in with-stopwatch." 
+message and body as in with-stopwatch."
   `(if (and keyfreq-timing
             (fboundp 'with-stopwatch))
-       (with-stopwatch ,message ,@body)      
+       (with-stopwatch ,message ,@body)
      ,@body))
 
 (defun keyfreq-pre-command-hook ()
@@ -149,7 +149,7 @@ message and body as in with-stopwatch."
 ;;         (command-keys (key-description (this-command-keys)))
 ;;         count)
 ;;     (when (and command (symbolp command))
-;;       (setq count (gethash (cons major-mode (cons command-keys command)) 
+;;       (setq count (gethash (cons major-mode (cons command-keys command))
 ;;                            keyfreq-table))
 ;;       (puthash (cons major-mode (cons command-keys command))
 ;;                (if count (1+ count) 1)
@@ -212,17 +212,17 @@ less then -LIMIT times will be added."
     (maphash
      (cond
       ((or (not (numberp limit)) (= limit 0))
-       (keyfreq-filtered-lambda (k v) 
+       (keyfreq-filtered-lambda (k v)
                                 (setq l (cons (cons k v) l) sum (+ sum v))))
-      ((= limit -1) (keyfreq-filtered-lambda (k v) 
+      ((= limit -1) (keyfreq-filtered-lambda (k v)
                                              (setq sum (+ sum v))))
       ((< limit 0)
        (setq limit (- limit))
-       (keyfreq-filtered-lambda (k v) 
+       (keyfreq-filtered-lambda (k v)
                                 (setq sum (+ sum v))
                                 (if (< v limit) (setq l (cons (cons k v) l)))))
       (t
-       (keyfreq-filtered-lambda (k v) 
+       (keyfreq-filtered-lambda (k v)
                                 (setq sum (+ sum v))
                                 (if (> v limit) (setq l (cons (cons k v) l))))))
      table)
@@ -245,16 +245,28 @@ command separated by single line (with no formatting) otherwise
 FUNC must be a function returning a string which will be called
 for each entry with three arguments: number of times command was
 called, percentage usage and the command."
-  (let* ((sum (car list)))
+  (let* ((sum (car list))
+         (max-len
+          (reduce (lambda (a b) (max a (length (symbol-name (car b)))))
+                  (cdr list)
+                  :initial-value 0)))
     (mapconcat
      (cond
       ((not func) (lambda (e) (format "%7d  %s\n" (cdr e) (car e))))
       ((equal func t)
-       (lambda (e) (format "%7d  %6.2f%%  %s\n"
-			   (cdr e) (/ (* 1e2 (cdr e)) sum) (car e))))
+       (lambda (e) (format (concat "%7d  %6.2f%%  %- "
+                              (format "%d" max-len)
+                              "s %s\n")
+			   (cdr e) (/ (* 1e2 (cdr e)) sum) (car e)
+                           (ignore-errors (keyfreq-where-is (car e))))))
       ((equal func 'raw) (lambda (e) (format "%d %s\n" (cdr e) (car e))))
       (t (lambda (e) (funcall func (cdr e) (/ (* 1e2 (cdr e)) sum) (car e)))))
      (cdr list) "")))
+
+(defun keyfreq-where-is (command)
+  (mapconcat 'key-description
+             (where-is-internal command)
+             ", "))
 
 (defun string-padder-back (l)
   "Returns a function that takes a string and pads it from the back to length"
@@ -298,7 +310,7 @@ buffer is used as MAJOR-MODE-SYMBOL argument."
 
 (defun keyfreq-generate-heat-map-input (&optional keyfreq-heat-map-file major-mode-symbol)
   "Writes to keyfreq-heat-map-file (if nil, \".emacs.keyfreq.heatmap\") the
-individual keys pressed.  
+individual keys pressed.
 
 No insert commands, spaces, or backspace are included.
 
@@ -321,15 +333,15 @@ this function defaults them to \"\"."
         (output-file (or keyfreq-heat-map-file "~/.emacs.keyfreq.heatmap"))
         (output "")
         (table (copy-hash-table keyfreq-table)))
-    (with-stopwatch-if-timing 
-     "heat map generation" 
+    (with-stopwatch-if-timing
+     "heat map generation"
      ;; Merge with the values in .emacs.keyfreq file
      (keyfreq-table-load table)
-     
+
      (maphash (keyfreq-filtered-lambda
                (command num)
                (loop for numInsertions from 1 to num
-                     do (setq output 
+                     do (setq output
                               (concat output
                                       (keyfreq-custom-key-description-length-leq keyfreq-custom-filter-max-command-length
                                                                                  (where-is-internal command))))))
@@ -337,7 +349,7 @@ this function defaults them to \"\"."
                (major-mode-symbol (keyfreq-filter-major-mode table major-mode-symbol))
                (t (keyfreq-groups-major-modes table))))
      (with-temp-file output-file
-       (insert output)))))                              
+       (insert output)))))
 
 (defun keyfreq-html (filename &optional confirm)
   "Saves an HTML file with all the statistics of each mode."
