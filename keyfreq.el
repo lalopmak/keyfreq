@@ -529,18 +529,43 @@ if it was successfully merged."
 
                      ;; Release the lock and reset the hash table.
                      (keyfreq-file-release-lock)
-                     (clrhash table))
+                     (clrhash table)
+                     (when keyfreq-use-abs-times 
+                       (keyfreq-remake-autosave-timer)))
                  (keyfreq-remake-autosave-timer)))
       (keyfreq-remake-autosave-timer))))
 
+(defun keyfreq-time-till-next-abs-time ()
+  "Time in seconds till the next absolute minute listed in keyfreq-autosave-abs-times." 
+  (let* ((abs-times-seconds (mapcar (lambda (m) (* 60 m)) 
+                                    keyfreq-autosave-abs-times))
+         (time (decode-time))
+         (time-second (car time))
+         (time-minute (cadr time))
+         (second (+ time-second
+                    (* 60 time-minute)))
+         (future-seconds (remove-if (lambda (s) (<= s second))
+                                    abs-times-seconds)))
+    (if future-seconds
+        (- (apply 'min future-seconds) second)
+      (+ (apply 'min abs-times-seconds) (- 3600 second)))))
+        
+               
 (defun keyfreq-delayed-save (&optional time repeat-delay)
   "Saves in time seconds, repeats with repeat-delay.
 
 If repeat-delay nil, keyfreq-autosave-timeout.
 
-time t means we start at next repeat-delay.  time nil means start at random time between 0 and repeat-delay."
+time t means we start at next repeat-delay.  time nil means:
+
+if keyfreq-use-abs-times, we use the next designated absolute time
+
+Otherwise, start at random time between 0 and repeat-delay."
   (let ((delay (or repeat-delay keyfreq-autosave-timeout)))
-    (run-at-time (or time (random delay))
+    (run-at-time (or time 
+                     (if keyfreq-use-abs-times
+                         (keyfreq-time-till-next-abs-time)
+                         (random delay)))
                  delay
                  'keyfreq-autosave--do)))
 
@@ -581,7 +606,7 @@ and when emacs is killed."
 
   (if keyfreq-autosave-mode
       (progn
-	(setq keyfreq-autosave--timer (keyfreq-delayed-save t))
+	(setq keyfreq-autosave--timer (keyfreq-delayed-save (unless keyfreq-use-abs-times t)))
 	(add-hook 'kill-emacs-hook 'keyfreq-autosave--do))
     (remove-hook 'kill-emacs-hook 'keyfreq-autosave--do)))
 
@@ -590,17 +615,28 @@ and when emacs is killed."
   "How often in seconds `keyfreq-table' should be saved
 when `keyfreq-autosave-mode' is enabled.  Setting this
 value will take effect only after (re)enabling
-`keyfreq-autosave-mode'."
+`keyfreq-autosave-mode' and setting keyfreq-use-abs-times to nil."
   :group 'keyfreq
   :type 'number)
 
+(defcustom keyfreq-autosave-abs-times '(0 20 40)
+  "The minutes of the hour during which `keyfreq-table' should be saved
+when `keyfreq-autosave-mode' is enabled.  Use 0 rather than 60.
+Setting this value will take effect only after (re)enabling
+`keyfreq-autosave-mode' and setting keyfreq-use-abs-times to t"
+  :group 'keyfreq
+  :type 'list)
+
+(defcustom keyfreq-use-abs-times nil
+ "Whether or not we should use keyfreq-autosave-abs-times
+as opposed to keyfreq-autosave-timeout.")
 
 (defvar keyfreq-autosave--timer nil)
 
 
 (defun keyfreq-autosave--do ()
   "Function executed periodically to save the `keyfreq-table' in `keyfreq-file'."
-  (keyfreq-table-save keyfreq-table))
+  (keyfreq-table-save keyfreq-table)) 
 
 (defun keyfreq-remake-autosave-timer ()
   "Remakes autosave timer a random time between 0 and keyfreq-autosave-timeout."
