@@ -535,7 +535,7 @@ if it was successfully merged."
                  (keyfreq-remake-autosave-timer)))
       (keyfreq-remake-autosave-timer))))
 
-(defun keyfreq-time-till-next-abs-time ()
+(defun keyfreq-secs-till-next-abs-time ()
   "Time in seconds till the next absolute minute listed in keyfreq-autosave-abs-times." 
   (let* ((abs-times-seconds (mapcar (lambda (m) (* 60 m)) 
                                     keyfreq-autosave-abs-times))
@@ -544,27 +544,31 @@ if it was successfully merged."
          (time-minute (cadr time))
          (second (+ time-second
                     (* 60 time-minute)))
-         (future-seconds (remove-if (lambda (s) (<= s second))
+         (future-seconds (remove-if (lambda (s) (<= s (+ second 20)))  ;;also removes s if it's too close in the future
                                     abs-times-seconds)))
     (if future-seconds
         (- (apply 'min future-seconds) second)
-      (+ (apply 'min abs-times-seconds) (- 3600 second)))))
+      (+ (- 3600 second)
+         (apply 'min abs-times-seconds)))))
         
                
 (defun keyfreq-delayed-save (&optional time repeat-delay)
-  "Saves in time seconds, repeats with repeat-delay.
+  "Creates timer to save in time seconds, repeats with repeat-delay.
 
-If repeat-delay nil, keyfreq-autosave-timeout.
+If repeat-delay nil, defaults to keyfreq-autosave-timeout.
 
-time t means we start at next repeat-delay.  time nil means:
+Time can be: 
 
-if keyfreq-use-abs-times, we use the next designated absolute time
+any timer time format (number or string); see run-at-time docstring.
+t - start at next repeat-delay.  
+nil - defaults to:
+  the next designated absolute time if keyfreq-use-abs-times
 
-Otherwise, start at random time between 0 and repeat-delay."
+  otherwise, random time between 0 and repeat-delay."
   (let ((delay (or repeat-delay keyfreq-autosave-timeout)))
     (run-at-time (or time 
                      (if keyfreq-use-abs-times
-                         (keyfreq-time-till-next-abs-time)
+                         (keyfreq-secs-till-next-abs-time)
                          (random delay)))
                  delay
                  'keyfreq-autosave--do)))
@@ -592,8 +596,7 @@ The table is not reset, so the values are appended to the table."
 ;;;###autoload
 (define-minor-mode keyfreq-autosave-mode
   "Keyfreq Autosave mode automatically saves
-`keyfreq-table' every `keyfreq-autosave-timeout' seconds
-and when emacs is killed."
+`keyfreq-table' every `keyfreq-autosave-timeout' seconds."
   :global t
   :init-value nil
   :lighter nil
@@ -604,12 +607,20 @@ and when emacs is killed."
     (cancel-timer keyfreq-autosave--timer)
     (setq keyfreq-autosave--timer nil))
 
-  (if keyfreq-autosave-mode
-      (progn
-	(setq keyfreq-autosave--timer (keyfreq-delayed-save (unless keyfreq-use-abs-times t)))
-	(add-hook 'kill-emacs-hook 'keyfreq-autosave--do))
-    (remove-hook 'kill-emacs-hook 'keyfreq-autosave--do)))
+  (when keyfreq-autosave-mode
+    (setq keyfreq-autosave--timer (keyfreq-delayed-save (unless keyfreq-use-abs-times t))))) 
 
+(define-minor-mode keyfreq-save-on-exit-mode
+  "Automatically saves `keyfreq-table' when emacs is killed."
+  :global t
+  :init-value nil
+  :lighter nil
+  :keymap nil
+  :group 'keyfreq
+
+  (if keyfreq-save-on-exit-mode
+      (add-hook 'kill-emacs-hook 'keyfreq-autosave--do)
+    (remove-hook 'kill-emacs-hook 'keyfreq-autosave--do)))
 
 (defcustom keyfreq-autosave-timeout 600
   "How often in seconds `keyfreq-table' should be saved
@@ -639,10 +650,11 @@ as opposed to keyfreq-autosave-timeout.")
   (keyfreq-table-save keyfreq-table)) 
 
 (defun keyfreq-remake-autosave-timer ()
-  "Remakes autosave timer a random time between 0 and keyfreq-autosave-timeout."
+  "If autosave on, remakes autosave timer via function keyfreq-delayed-save."
   (when keyfreq-autosave--timer
     (cancel-timer keyfreq-autosave--timer))
-  (setq keyfreq-autosave--timer (keyfreq-delayed-save)))
+  (when keyfreq-autosave-mode
+    (setq keyfreq-autosave--timer (keyfreq-delayed-save))))
 
 
 (provide 'keyfreq)
