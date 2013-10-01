@@ -544,12 +544,22 @@ if it was successfully merged."
          (time-minute (cadr time))
          (second (+ time-second
                     (* 60 time-minute)))
-         (future-seconds (remove-if (lambda (s) (<= s (+ second 20)))  ;;also removes s if it's too close in the future
+         (future-threshold 20)
+         (future-seconds (remove-if (lambda (s) 
+                                      "s is not far enough in the future"
+                                      (<= s (+ second 
+                                               future-threshold)))  
                                     abs-times-seconds)))
     (if future-seconds
         (- (apply 'min future-seconds) second)
-      (+ (- 3600 second)
-         (apply 'min abs-times-seconds)))))
+      (let* ((seconds-till-new-hour (- 3600 second))
+             (post-hour-seconds (remove-if (lambda (s) 
+                                             "s is not far enough in the future"
+                                             (<= (+ s seconds-till-new-hour)
+                                                 future-threshold)) 
+                                           abs-times-seconds)))
+        (+ seconds-till-new-hour
+           (apply 'min post-hour-seconds)))))) 
         
                
 (defun keyfreq-delayed-save (&optional time repeat-delay)
